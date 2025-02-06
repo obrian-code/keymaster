@@ -4,6 +4,8 @@ import { ReniecController } from './reniec/reniec.controller';
 import { ReniecService } from './reniec/reniec.service';
 import { SunarpService } from './sunarp/sunarp.service';
 import { SunarpController } from './sunarp/sunarp.controller';
+import { SunatController } from './sunat/sunat.controller';
+import { SunatService } from './sunat/sunat.service';
 
 @Module({
   imports: [
@@ -11,7 +13,7 @@ import { SunarpController } from './sunarp/sunarp.controller';
       isGlobal: true,
     }),
   ],
-  controllers: [ReniecController, SunarpController],
-  providers: [ReniecService, SunarpService],
+  controllers: [ReniecController, SunarpController, SunatController],
+  providers: [ReniecService, SunarpService, SunatService],
 })
 export class AppModule {}

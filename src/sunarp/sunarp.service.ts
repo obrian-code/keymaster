@@ -20,8 +20,16 @@ export class SunarpService {
       waitUntil: 'networkidle2',
     });
 
+    await page.waitForSelector('#nroPlaca', { timeout: 10000 });
+
     // Ingresar el número de placa 'PC3060'
-    await page.type('#nroPlaca', placa, { delay: 100 });
+    await page.evaluate((__placa: string) => {
+      const input = document.getElementById('nroPlaca') as HTMLInputElement;
+      if (input) {
+        input.value = __placa;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }, placa);
 
     // Obtener el contenido HTML de la página
     const content = await page.content();
@@ -29,7 +37,7 @@ export class SunarpService {
 
     // Obtener la URL de la imagen en Base64
     const base64Image = $('img#image').attr('src');
-
+    console.log({ base64Image });
     if (!base64Image) {
       console.error('No se encontró la imagen.');
       await browser.close(); // Asegúrate de cerrar el navegador en caso de error
@@ -47,7 +55,7 @@ export class SunarpService {
     } = await Tesseract.recognize(imageBuffer, 'eng', {
       logger: (m) => console.log(m), // Progreso de la OCR
     });
-
+    console.log({ text });
     console.log('Texto extraído de la imagen:', text.trim());
 
     // Ingresar el texto del captcha
