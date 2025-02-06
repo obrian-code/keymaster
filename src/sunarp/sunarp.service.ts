@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import puppeteer from 'src/inc/puppeteer.config';
+import puppeteer, { userAgent } from 'src/inc/puppeteer.config';
 import Tesseract from 'tesseract.js';
 
 @Injectable()
@@ -14,8 +14,10 @@ export class SunarpService {
       headless: false,
       args: ['--no-sandbox'],
     });
+    /*     --proxy-server=${proxy} */
 
     const page = await browser.newPage();
+    await page.setUserAgent(userAgent);
     await page.goto(this.configService.get<string>('SUNARP_VECHICULO_PLACA'), {
       waitUntil: 'networkidle2',
     });

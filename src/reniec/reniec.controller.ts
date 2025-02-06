@@ -9,4 +9,8 @@ export class ReniecController {
   async dni(@Query('dni') dni: string) {
     return await this.reniecService.dni(dni);
   }
+  @Get('/check-digit')
+  async dniCheckDigit(@Query('dni') dni: string) {
+    return await this.reniecService.dniCheckDigit(dni);
+  }
 }

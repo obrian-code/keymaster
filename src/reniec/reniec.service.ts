@@ -1,70 +1,128 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import puppeteer from 'src/inc/puppeteer.config';
+import { launchBrowser } from 'src/inc/puppeteer.config';
 
 @Injectable()
 export class ReniecService {
   constructor(private configService: ConfigService) {}
   //http://localhost:3000/reniec?dni=
   async dni(nro_dni: string): Promise<any> {
+    let browser, page;
     try {
-      const browser = await puppeteer.launch({
-        headless: false,
-        args: ['--no-sandbox'],
-      });
+      // Usa la función para lanzar el navegador
+      ({ browser, page } = await launchBrowser());
 
-      const page = await browser.newPage();
-      await page.goto(this.configService.get<string>('RENIEC_DNI'), {
-        waitUntil: 'networkidle2',
-      });
+      await page.goto(
+        `${this.configService.get<string>('RENIEC_DNI')}/buscar-datos-por-dni`,
+        {
+          waitUntil: 'networkidle2',
+        },
+      );
 
-      await page.waitForSelector('#dni4', { timeout: 10000 });
+      await page.waitForSelector('#dni', { timeout: 10000 });
 
       await page.evaluate((nro__dni: string) => {
-        const input = document.getElementById('dni4') as HTMLInputElement;
+        const input = document.getElementById('dni') as HTMLInputElement;
         if (input) {
           input.value = nro__dni;
-          input.dispatchEvent(new Event('input', { bubbles: true })); // Disparar evento de entrada
+          input.dispatchEvent(new Event('input', { bubbles: true }));
         }
       }, nro_dni);
 
       await Promise.all([
-        page.click('#buscar-dni-button'),
-        page.waitForSelector('#resultado_dni', { timeout: 60000 }),
+        page.click('#btn-buscar-datos-por-dni'),
+        page.waitForSelector('#nombres', { timeout: 60000 }),
+        page.waitForSelector('#apellidop', { timeout: 60000 }),
+        page.waitForSelector('#apellidom', { timeout: 60000 }),
       ]);
 
-      // Esperar a que aparezca el resultado
-      await page.waitForSelector('#resultado_dni', { timeout: 10000 });
-
-      // Obtener el resultado
-      const response = await page.$eval(
-        '#resultado_dni',
-        (el) => el.textContent || '',
+      // Extraer los datos de los elementos
+      const nombres = await page.$eval(
+        '#nombres',
+        (el) => (el as HTMLInputElement).value.trim() || '',
+      );
+      const apellidoPaterno = await page.$eval(
+        '#apellidop',
+        (el) => (el as HTMLInputElement).value.trim() || '',
+      );
+      const apellidoMaterno = await page.$eval(
+        '#apellidom',
+        (el) => (el as HTMLInputElement).value.trim() || '',
       );
 
-      // Definir la expresión regular para extraer los datos
-      const regex =
-        /Número de DNI:\s*(\d+)\s*Nombres:\s*([^\n]+)\s*Apellido Paterno:\s*([^\n]+)\s*Apellido Materno:\s*([^\n]+)\s*Código de Verificación:\s*(\d+)/;
-
-      const match = regex.exec(response);
-
-      // Verifica si se encontró un match
-      if (!match) {
+      if (!nombres || !apellidoPaterno || !apellidoMaterno) {
         console.error('No se pudo extraer la información del DNI.');
-        await browser.close();
-        return null; // Devolver null si no se pudo extraer información
+        return { error: 'No se pudo extraer la información del DNI.' };
       }
-
-      await browser.close(); // Cerrar el navegador
 
       // Devolver el resultado en formato objeto
       return {
-        dni: match[1],
-        nombres: match[2],
-        apellidoPaterno: match[3],
-        apellidoMaterno: match[4],
-        codigoVerificacion: match[5],
+        dni: nro_dni, // Aquí puedes mantener el DNI ingresado
+        nombres,
+        apellidoPaterno,
+        apellidoMaterno,
       };
-    } catch (error) {}
+    } catch (error) {
+      console.error('Error al procesar el DNI:', error);
+      return { error: 'Error al procesar el DNI.' }; // Manejo de error
+    } finally {
+      if (browser) {
+        await browser.close(); // Asegúrate de cerrar el navegador en el bloque finally
+      }
+    }
+  }
+
+  async dniCheckDigit(nro_dni: string) {
+    let browser, page;
+    try {
+      // Usa la función para lanzar el navegador
+      ({ browser, page } = await launchBrowser());
+
+      await page.goto(
+        `${this.configService.get<string>('RENIEC_DNI')}/obtener-digito-verificador-del-dni`,
+        {
+          waitUntil: 'networkidle2',
+        },
+      );
+
+      await page.waitForSelector('#dniveri', { timeout: 10000 });
+
+      await page.evaluate((nro__dni: string) => {
+        const input = document.getElementById('dniveri') as HTMLInputElement;
+        if (input) {
+          input.value = nro__dni;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }, nro_dni);
+
+      await Promise.all([
+        page.click('#btn-buscar-por-dniveri'),
+        page.waitForSelector('#digito_verificador', { timeout: 60000 }),
+      ]);
+
+      // Extraer los datos de los elementos
+      const digito_verificador = await page.$eval(
+        '#digito_verificador',
+        (el) => (el as HTMLInputElement).value.trim() || '',
+      );
+      console.log({ digito_verificador });
+      if (!digito_verificador) {
+        console.error('No se pudo extraer la información del DNI.');
+        return { error: 'No se pudo extraer la información del DNI.' };
+      }
+
+      // Devolver el resultado en formato objeto
+      return {
+        dni: nro_dni, // Aquí puedes mantener el DNI ingresado
+        digito_verificador,
+      };
+    } catch (error) {
+      console.error('Error al procesar el DNI:', error);
+      return { error: 'Error al procesar el DNI.' }; // Manejo de error
+    } finally {
+      if (browser) {
+        await browser.close(); // Asegúrate de cerrar el navegador en el bloque finally
+      }
+    }
   }
 }
