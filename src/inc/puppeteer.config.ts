@@ -23,6 +23,12 @@ export const launchBrowser = async () => {
     ],
   });
 
+  // Cierra todas las pestañas existentes antes de abrir una nueva
+  const pages = await browser.pages();
+  for (const page of pages) {
+    await page.close();
+  }
+
   const page = await browser.newPage();
   await page.setUserAgent(userAgent); // Configura el userAgent
 
