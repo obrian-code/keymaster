@@ -14,9 +14,11 @@ export const proxy = `http://scraperapi:${config.get<string>('SCRAPERAPI_KEY')}@
 export const userAgent =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36';
 
+const headlessMode = config.get<string>('BROWSER_HEADLESS_MODE') === 'true';
+
 export const launchBrowser = async () => {
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: headlessMode,
     args: [
       '--no-sandbox',
       `--proxy-server=${proxy}`, // Configura el proxy
