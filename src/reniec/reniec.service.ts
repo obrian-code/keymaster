@@ -5,7 +5,6 @@ import { launchBrowser } from 'src/inc/puppeteer.config';
 @Injectable()
 export class ReniecService {
   constructor(private configService: ConfigService) {}
-  //http://localhost:3000/reniec?dni=
   async dni(nro_dni: string): Promise<any> {
     let browser, page;
     try {
